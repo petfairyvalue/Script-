@@ -1,131 +1,105 @@
---[[
-Visual Adopt Me Pet Spawner - Client Only
-Mega Neon, Exotics, Interactions
-Safe pour Delta / Synapse
---]]
-
+-- Services Roblox
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Liste des meilleurs pets (visuels)
-local bestPets = {
-    "Shadow Dragon",
-    "Frost Dragon",
-    "Bat Dragon",
-    "Giraffe",
-    "Kangaroo",
-    "Golden Unicorn",
-    "Reindeer",
-    "Mega Neon Dog",
-    "Parrot",
-    "Owl"
-}
-
--- GUI Setup
+-- SCREEN GUI
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "PetVisualizer"
+screenGui.Name = "VisualPetSpawner"
 screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
 screenGui.Parent = playerGui
 
+-- MAIN FRAME (draggable)
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 400, 0, 500)
-mainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.Size = UDim2.new(0, 300, 0, 400)
+mainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 
-local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0, 15)
-uiCorner.Parent = mainFrame
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = mainFrame
 
+-- TITLE
 local title = Instance.new("TextLabel")
-title.Text = "Adopt Me - Pet Visualizer"
-title.Font = Enum.Font.GothamBold
-title.TextSize = 22
-title.TextColor3 = Color3.fromRGB(200, 200, 255)
+title.Size = UDim2.new(1, 0, 0, 40)
+title.Position = UDim2.new(0, 0, 0, 0)
 title.BackgroundTransparency = 1
-title.Size = UDim2.new(1, 0, 0, 50)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Text = "Visual Pet Spawner"
 title.Parent = mainFrame
 
-local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(1, -20, 1, -60)
-scrollFrame.Position = UDim2.new(0, 10, 0, 50)
-scrollFrame.BackgroundTransparency = 1
-scrollFrame.CanvasSize = UDim2.new(0, 0, 0, #bestPets * 60)
-scrollFrame.ScrollBarThickness = 6
-scrollFrame.Parent = mainFrame
+-- PET BUTTONS FRAME
+local buttonFrame = Instance.new("Frame")
+buttonFrame.Size = UDim2.new(1, -20, 1, -60)
+buttonFrame.Position = UDim2.new(0, 10, 0, 50)
+buttonFrame.BackgroundTransparency = 1
+buttonFrame.Parent = mainFrame
 
--- Fonction pour spawn un pet visuel
-local function spawnPet(petName)
+-- List of pets
+local pets = {
+    {Name = "Parrot", Color = Color3.fromRGB(255, 100, 0)},
+    {Name = "Owl", Color = Color3.fromRGB(200, 200, 255)},
+    {Name = "Dragon", Color = Color3.fromRGB(255, 0, 0)},
+    {Name = "Frost Dragon", Color = Color3.fromRGB(180, 220, 255)},
+    {Name = "Shadow Dragon", Color = Color3.fromRGB(50, 50, 50)}
+}
+
+-- Spawn function (visuel seulement)
+local function spawnPet(petName, isMega, isNeon)
     local pet = Instance.new("Part")
-    pet.Size = Vector3.new(4,4,4)
-    pet.Position = player.Character.PrimaryPart.Position + Vector3.new(0,5,5)
+    pet.Size = Vector3.new(4, 4, 4)
+    pet.Position = player.Character and player.Character.PrimaryPart.Position + Vector3.new(5, 0, 0) or Vector3.new(0,5,0)
     pet.Anchored = false
-    pet.Name = petName
+    pet.CanCollide = false
+    pet.Shape = Enum.PartType.Ball
     pet.BrickColor = BrickColor.Random()
+    pet.Name = petName
+
+    -- Color logic
+    if isNeon then
+        pet.Material = Enum.Material.Neon
+    else
+        pet.Material = Enum.Material.SmoothPlastic
+    end
+
+    -- Size logic
+    if isMega then
+        pet.Size = pet.Size * 2
+    end
+
+    -- Attach to player for visual interaction
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = player.Character and player.Character.PrimaryPart
+    weld.Part1 = pet
+    weld.Parent = pet
+
     pet.Parent = workspace
-
-    -- Mesh + couleur pour simuler Mega Neon / Exotic
-    local mesh = Instance.new("SpecialMesh")
-    mesh.MeshType = Enum.MeshType.Sphere
-    mesh.Scale = Vector3.new(3,3,3)
-    mesh.Parent = pet
-
-    -- Animation flottante
-    local up = true
-    RunService.Heartbeat:Connect(function()
-        if pet.Parent then
-            local pos = pet.Position
-            if up then
-                pet.Position = pos + Vector3.new(0,0.03,0)
-                if pos.Y >= player.Character.PrimaryPart.Position.Y + 6 then up = false end
-            else
-                pet.Position = pos - Vector3.new(0,0.03,0)
-                if pos.Y <= player.Character.PrimaryPart.Position.Y + 4 then up = true end
-            end
-        end
-    end)
-
-    -- Interaction simple (caresser / monter)
-    local clickDetector = Instance.new("ClickDetector")
-    clickDetector.Parent = pet
-    clickDetector.MaxActivationDistance = 15
-
-    clickDetector.MouseClick:Connect(function(clicker)
-        if clicker == player then
-            pet.Position = player.Character.PrimaryPart.Position + Vector3.new(0,5,0)
-            -- Option caresser : changer couleur temporairement
-            pet.BrickColor = BrickColor.Random()
-        end
-    end)
 end
 
--- Fonction pour créer boutons GUI
-local function createPetButton(petName,index)
+-- Create buttons
+for i, petInfo in ipairs(pets) do
     local button = Instance.new("TextButton")
-    button.Size = UDim2.new(1, -20, 0, 50)
-    button.Position = UDim2.new(0,0,0,(index-1)*60)
-    button.BackgroundColor3 = Color3.fromRGB(50,50,60)
-    button.Text = "Spawn: "..petName
-    button.Font = Enum.Font.Gotham
-    button.TextSize = 18
-    button.TextColor3 = Color3.fromRGB(255,255,255)
-    button.Parent = scrollFrame
+    button.Size = UDim2.new(1, -20, 0, 40)
+    button.Position = UDim2.new(0, 0, 0, (i-1) * 45)
+    button.BackgroundColor3 = petInfo.Color
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 16
+    button.Text = petInfo.Name
+    button.Parent = buttonFrame
 
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0,10)
-    corner.Parent = button
-
+    -- Click event
     button.MouseButton1Click:Connect(function()
-        spawnPet(petName)
+        -- Exemple: spawn Mega Neon par défaut (tu peux ajouter un toggle GUI plus tard)
+        spawnPet(petInfo.Name, true, true)
     end)
-end
-
--- Création des boutons
-for i,petName in ipairs(bestPets) do
-    createPetButton(petName,i)
 end
