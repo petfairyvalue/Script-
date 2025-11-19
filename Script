@@ -1,86 +1,119 @@
--- SERVICES
+-- Visual Adopt Me High-Tier Mega Pets (Delta Friendly)
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- PET CONFIGURATION
-local pets = {
-    {Name = "Parrot", Color = Color3.fromRGB(255, 0, 0), Size = Vector3.new(2,2,2)},
-    {Name = "Owl", Color = Color3.fromRGB(255,255,255), Size = Vector3.new(2,2,2)},
-    {Name = "Dragon", Color = Color3.fromRGB(0,0,255), Size = Vector3.new(3,3,3)}, -- exo
-}
-
--- CREATE GUI
+-- Create main GUI
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "VisualPetSpawner"
+screenGui.Name = "MegaPetSpawner"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
 screenGui.Parent = playerGui
 
+-- Draggable main frame
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0.8,0,0.5,0)
-mainFrame.Position = UDim2.new(0.1,0,0.25,0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+mainFrame.Size = UDim2.new(0, 250, 0, 300)
+mainFrame.Position = UDim2.new(0.5, -125, 0.5, -150)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 mainFrame.Active = true
-mainFrame.Draggable = true -- DRAGGABLE FOR MOBILE
+mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 
-local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0, 16)
-uiCorner.Parent = mainFrame
+local uicorner = Instance.new("UICorner")
+uicorner.CornerRadius = UDim.new(0, 12)
+uicorner.Parent = mainFrame
 
--- BUTTONS TO SPAWN PETS
-local function createPetButton(pet, index)
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0,150,0,50)
-    button.Position = UDim2.new(0,20,0, 60 * index)
-    button.Text = pet.Name
-    button.BackgroundColor3 = pet.Color
-    button.Parent = mainFrame
+local title = Instance.new("TextLabel")
+title.Text = "Mega Pet Spawner"
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(200, 200, 255)
+title.Font = Enum.Font.GothamBold
+title.TextScaled = true
+title.Parent = mainFrame
 
-    button.MouseButton1Click:Connect(function()
-        -- Remove old pet if exists
-        if player.Character:FindFirstChild("VisualPet") then
-            player.Character.VisualPet:Destroy()
-        end
+-- High-tier pets list
+local pets = {"Parrot", "Owl", "Dragon", "Frost Dragon", "Bat"}
 
-        -- CREATE PET
-        local petModel = Instance.new("Part")
-        petModel.Size = pet.Size
-        petModel.Color = pet.Color
-        petModel.Name = "VisualPet"
-        petModel.Anchored = false
-        petModel.CanCollide = false
-        petModel.Parent = workspace
+-- Function to spawn visual pet
+local function spawnPet(petName)
+    -- Remove old pet if exists
+    if player.Character:FindFirstChild("VisualPet") then
+        player.Character.VisualPet:Destroy()
+    end
 
-        -- FOLLOW PLAYER
-        local bodyPos = Instance.new("BodyPosition")
-        bodyPos.MaxForce = Vector3.new(1e5,1e5,1e5)
-        bodyPos.Position = player.Character.HumanoidRootPart.Position + Vector3.new(3,2,0)
-        bodyPos.Parent = petModel
+    local pet = Instance.new("Part")
+    pet.Name = "VisualPet"
+    pet.Size = Vector3.new(3,3,3)
+    pet.Shape = Enum.PartType.Ball
+    pet.Anchored = false
+    pet.CanCollide = false
+    pet.Material = Enum.Material.Neon
+    pet.BrickColor = BrickColor.Random() -- random glow color
+    pet.Parent = workspace
 
-        RunService.RenderStepped:Connect(function()
-            if petModel and bodyPos then
-                bodyPos.Position = player.Character.HumanoidRootPart.Position + Vector3.new(3,2,0)
-            end
-        end)
+    -- Weld to player for follow effect
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = player.Character:FindFirstChild("HumanoidRootPart")
+    weld.Part1 = pet
+    weld.Parent = pet
 
-        -- MOUNT PET (OPTIONAL)
-        local mountButton = Instance.new("TextButton")
-        mountButton.Size = UDim2.new(0,100,0,40)
-        mountButton.Position = UDim2.new(1,-120,0,60*index)
-        mountButton.Text = "Mount"
-        mountButton.Parent = mainFrame
+    -- Optional: Visual label above pet
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 100, 0, 50)
+    billboard.Adornee = pet
+    billboard.AlwaysOnTop = true
+    billboard.Parent = pet
 
-        mountButton.MouseButton1Click:Connect(function()
-            if player.Character and petModel then
-                player.Character.HumanoidRootPart.CFrame = petModel.CFrame + Vector3.new(0,2,0)
-            end
-        end)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1,0,1,0)
+    label.BackgroundTransparency = 1
+    label.Text = petName.." [Mega]"
+    label.TextColor3 = Color3.fromRGB(255,255,100)
+    label.Font = Enum.Font.GothamBold
+    label.TextScaled = true
+    label.Parent = billboard
+end
+
+-- Create buttons for each pet
+for i, petName in ipairs(pets) do
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -20, 0, 40)
+    btn.Position = UDim2.new(0, 10, 0, 40 + (i-1)*50)
+    btn.Text = petName
+    btn.Font = Enum.Font.Gotham
+    btn.TextScaled = true
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Parent = mainFrame
+
+    btn.MouseButton1Click:Connect(function()
+        spawnPet(petName)
     end)
 end
 
-for i,pet in ipairs(pets) do
-    createPetButton(pet, i)
+-- Extra buttons: Mount / Pet / Remove
+local extraButtons = {"Mount", "Pet", "Remove"}
+for i, name in ipairs(extraButtons) do
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -20, 0, 30)
+    btn.Position = UDim2.new(0, 10, 0, 300 - (4-i)*35)
+    btn.Text = name
+    btn.Font = Enum.Font.Gotham
+    btn.TextScaled = true
+    btn.BackgroundColor3 = Color3.fromRGB(70, 50, 50)
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Parent = mainFrame
+
+    btn.MouseButton1Click:Connect(function()
+        local pet = workspace:FindFirstChild("VisualPet")
+        if pet then
+            if name == "Remove" then
+                pet:Destroy()
+            else
+                -- Simulate mount / pet effect
+                pet.BrickColor = BrickColor.Random()
+            end
+        end
+    end)
 end
