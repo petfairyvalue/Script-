@@ -1,204 +1,131 @@
+--[[
+Visual Adopt Me Pet Spawner - Client Only
+Mega Neon, Exotics, Interactions
+Safe pour Delta / Synapse
+--]]
 
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
-local ReplicatedFirst = game:GetService("ReplicatedFirst")
+local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Remove default loading screen
-ReplicatedFirst:RemoveDefaultLoadingScreen()
+-- Liste des meilleurs pets (visuels)
+local bestPets = {
+    "Shadow Dragon",
+    "Frost Dragon",
+    "Bat Dragon",
+    "Giraffe",
+    "Kangaroo",
+    "Golden Unicorn",
+    "Reindeer",
+    "Mega Neon Dog",
+    "Parrot",
+    "Owl"
+}
 
--- Loading duration: 1 minutes (60 seconds)
-local DURATION = 60
-local startTime = tick()
-
--- Create ScreenGui
+-- GUI Setup
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "LoadingTab"
-screenGui.IgnoreGuiInset = true
+screenGui.Name = "PetVisualizer"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- Tab dimensions: ~15% screen area
-local TAB_SCALE_X = 0.35
-local TAB_SCALE_Y = 0.42
-local tabWidth = UDim2.new(TAB_SCALE_X, 0, TAB_SCALE_Y, 0)
-local tabPosition = UDim2.new(0.5, 0, 0.5, 0)
-local tabAnchor = Vector2.new(0.5, 0.5)
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 400, 0, 500)
+mainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.Parent = screenGui
 
--- MAIN FRAME - DRAGGABLE (ENTIRE GUI)
-local tabFrame = Instance.new("Frame")
-tabFrame.Name = "TabFrame"
-tabFrame.Size = tabWidth
-tabFrame.Position = tabPosition
-tabFrame.AnchorPoint = tabAnchor
-tabFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-tabFrame.BorderSizePixel = 0
-tabFrame.Active = true
-tabFrame.Draggable = true  -- ENTIRE GUI IS DRAGGABLE
-tabFrame.Parent = screenGui
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 15)
+uiCorner.Parent = mainFrame
 
--- Rounded corners
-local tabCorner = Instance.new("UICorner")
-tabCorner.CornerRadius = UDim.new(0, 16)
-tabCorner.Parent = tabFrame
+local title = Instance.new("TextLabel")
+title.Text = "Adopt Me - Pet Visualizer"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 22
+title.TextColor3 = Color3.fromRGB(200, 200, 255)
+title.BackgroundTransparency = 1
+title.Size = UDim2.new(1, 0, 0, 50)
+title.Parent = mainFrame
 
--- Border glow
-local tabStroke = Instance.new("UIStroke")
-tabStroke.Color = Color3.fromRGB(50, 100, 255)
-tabStroke.Thickness = 2
-tabStroke.Transparency = 0.4
-tabStroke.Parent = tabFrame
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Size = UDim2.new(1, -20, 1, -60)
+scrollFrame.Position = UDim2.new(0, 10, 0, 50)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, #bestPets * 60)
+scrollFrame.ScrollBarThickness = 6
+scrollFrame.Parent = mainFrame
 
--- Pulsing glow
-local pulseTween = TweenService:Create(
-    tabStroke,
-    TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
-    {Transparency = 0.1}
-)
-pulseTween:Play()
+-- Fonction pour spawn un pet visuel
+local function spawnPet(petName)
+    local pet = Instance.new("Part")
+    pet.Size = Vector3.new(4,4,4)
+    pet.Position = player.Character.PrimaryPart.Position + Vector3.new(0,5,5)
+    pet.Anchored = false
+    pet.Name = petName
+    pet.BrickColor = BrickColor.Random()
+    pet.Parent = workspace
 
--- TITLE - NOT DRAGGABLE (fixed to frame)
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Name = "Title"
-titleLabel.Size = UDim2.new(1, -40, 0, 50)
-titleLabel.Position = UDim2.new(0, 20, 0, 15)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.Text = "Loading Adopt Me Pet Spawner"
-titleLabel.TextColor3 = Color3.new(1, 1, 1)
-titleLabel.TextScaled = true
-titleLabel.TextXAlignment = Enum.TextXAlignment.Center
-titleLabel.Active = false  -- TEXT NOT INTERACTIVE
-titleLabel.Selectable = false
-titleLabel.Parent = tabFrame
+    -- Mesh + couleur pour simuler Mega Neon / Exotic
+    local mesh = Instance.new("SpecialMesh")
+    mesh.MeshType = Enum.MeshType.Sphere
+    mesh.Scale = Vector3.new(3,3,3)
+    mesh.Parent = pet
 
--- Progress bar background
-local barBg = Instance.new("Frame")
-barBg.Name = "BarBg"
-barBg.Size = UDim2.new(1, -60, 0, 20)
-barBg.Position = UDim2.new(0, 30, 0.60, 0)
-barBg.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-barBg.BorderSizePixel = 0
-barBg.Parent = tabFrame
+    -- Animation flottante
+    local up = true
+    RunService.Heartbeat:Connect(function()
+        if pet.Parent then
+            local pos = pet.Position
+            if up then
+                pet.Position = pos + Vector3.new(0,0.03,0)
+                if pos.Y >= player.Character.PrimaryPart.Position.Y + 6 then up = false end
+            else
+                pet.Position = pos - Vector3.new(0,0.03,0)
+                if pos.Y <= player.Character.PrimaryPart.Position.Y + 4 then up = true end
+            end
+        end
+    end)
 
-local barBgCorner = Instance.new("UICorner")
-barBgCorner.CornerRadius = UDim.new(0, 10)
-barBgCorner.Parent = barBg
+    -- Interaction simple (caresser / monter)
+    local clickDetector = Instance.new("ClickDetector")
+    clickDetector.Parent = pet
+    clickDetector.MaxActivationDistance = 15
 
--- Progress bar fill
-local barFill = Instance.new("Frame")
-barFill.Name = "BarFill"
-barFill.Size = UDim2.new(0, 0, 1, 0)
-barFill.Position = UDim2.new(0, 0, 0, 0)
-barFill.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
-barFill.BorderSizePixel = 0
-barFill.Parent = barBg
-
-local barFillCorner = Instance.new("UICorner")
-barFillCorner.CornerRadius = UDim.new(0, 10)
-barFillCorner.Parent = barFill
-
--- Bar glow
-local barStroke = Instance.new("UIStroke")
-barStroke.Color = Color3.fromRGB(80, 180, 255)
-barStroke.Thickness = 1
-barStroke.Transparency = 0.5
-barStroke.Parent = barFill
-
--- PERCENTAGE - JUST "X%" (NO TIME)
-local percentLabel = Instance.new("TextLabel")
-percentLabel.Name = "Percent"
-percentLabel.Size = UDim2.new(1, -60, 0, 28)
-percentLabel.Position = UDim2.new(0, 30, 0.78, 0)
-percentLabel.BackgroundTransparency = 1
-percentLabel.Font = Enum.Font.GothamBold
-percentLabel.Text = "0%"
-percentLabel.TextColor3 = Color3.new(1, 1, 1)
-percentLabel.TextScaled = true
-percentLabel.TextXAlignment = Enum.TextXAlignment.Center
-percentLabel.Active = false
-percentLabel.Selectable = false
-percentLabel.Parent = tabFrame
-
--- Pet spinner
-local spinnerFrame = Instance.new("Frame")
-spinnerFrame.Name = "Spinner"
-spinnerFrame.Size = UDim2.new(0, 32, 0, 32)
-spinnerFrame.Position = UDim2.new(0.5, -16, 0.40, 0)
-spinnerFrame.BackgroundTransparency = 1
-spinnerFrame.Parent = tabFrame
-
--- Paw dots
-local dots = {}
-local pawColors = {Color3.fromRGB(255, 200, 100), Color3.fromRGB(100, 200, 255), Color3.fromRGB(200, 255, 100)}
-for i = 1, 3 do
-    local dot = Instance.new("Frame")
-    dot.Name = "Dot" .. i
-    dot.Size = UDim2.new(0, 10, 0, 8)
-    dot.Position = UDim2.new(0.5, -5, 0.5, -4)
-    dot.AnchorPoint = Vector2.new(0.5, 0.5)
-    dot.BackgroundColor3 = pawColors[i]
-    dot.BorderSizePixel = 0
-    dot.Active = false
-    dot.Parent = spinnerFrame
-    
-    local dotCorner = Instance.new("UICorner")
-    dotCorner.CornerRadius = UDim.new(1, 0)
-    dotCorner.Parent = dot
-    
-    local angle = (i - 1) * (math.pi * 2 / 3)
-    dot.Position = UDim2.new(0.5, 12 * math.cos(angle), 0.5, 12 * math.sin(angle))
-    
-    table.insert(dots, dot)
+    clickDetector.MouseClick:Connect(function(clicker)
+        if clicker == player then
+            pet.Position = player.Character.PrimaryPart.Position + Vector3.new(0,5,0)
+            -- Option caresser : changer couleur temporairement
+            pet.BrickColor = BrickColor.Random()
+        end
+    end)
 end
 
--- Animation vars
-local spinnerRotation = 0
-local pulseTime = 0
+-- Fonction pour créer boutons GUI
+local function createPetButton(petName,index)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, -20, 0, 50)
+    button.Position = UDim2.new(0,0,0,(index-1)*60)
+    button.BackgroundColor3 = Color3.fromRGB(50,50,60)
+    button.Text = "Spawn: "..petName
+    button.Font = Enum.Font.Gotham
+    button.TextSize = 18
+    button.TextColor3 = Color3.fromRGB(255,255,255)
+    button.Parent = scrollFrame
 
--- Update loop
-local connection
-connection = RunService.Heartbeat:Connect(function(dt)
-    local elapsed = tick() - startTime
-    local progress = math.min(elapsed / DURATION, 1)
-    
-    -- Progress bar
-    barFill:TweenSize(
-        UDim2.new(progress, 0, 1, 0),
-        "Out", "Quad", 0.1, true
-    )
-    
-    -- JUST PERCENTAGE
-    percentLabel.Text = string.format("%.0f%%", progress * 100)
-    
-    -- Spinner
-    spinnerRotation += dt * 3.5
-    spinnerFrame.Rotation = spinnerRotation * (180 / math.pi)
-    
-    -- Dots pulse
-    pulseTime += dt * 4
-    for i, dot in ipairs(dots) do
-        local alpha = 0.4 + 0.6 * math.sin(pulseTime + (i - 1) * 2)
-        dot.BackgroundTransparency = 1 - alpha
-    end
-    
-    -- Glow pulse
-    tabStroke.Transparency = 0.4 + 0.3 * math.sin(pulseTime * 1.5)
-    
-    -- End
-    if progress >= 1 then
-        connection:Disconnect()
-        local fadeTween = TweenService:Create(
-            tabFrame,
-            TweenInfo.new(1.5, Enum.EasingStyle.Quint),
-            {BackgroundTransparency = 1}
-        )
-        fadeTween:Play()
-        fadeTween.Completed:Connect(function()
-            screenGui:Destroy()
-        end)
-    end
-end)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0,10)
+    corner.Parent = button
+
+    button.MouseButton1Click:Connect(function()
+        spawnPet(petName)
+    end)
+end
+
+-- Création des boutons
+for i,petName in ipairs(bestPets) do
+    createPetButton(petName,i)
+end
