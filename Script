@@ -1,0 +1,37 @@
+local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local humanoid = char:WaitForChild("Humanoid")
+
+local fly = true
+local speed = 2
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    if fly then
+        char:TranslateBy(char.HumanoidRootPart.CFrame.LookVector * speed)
+    end
+end)
+local noclip = true
+local player = game.Players.LocalPlayer
+
+game:GetService("RunService").Stepped:Connect(function()
+    if noclip and player.Character then
+        for _, part in pairs(player.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+local UserInputService = game:GetService("UserInputService")
+local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local humanoid = char:WaitForChild("Humanoid")
+
+UserInputService.JumpRequest:Connect(function()
+    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+end)
+local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local humanoid = char:WaitForChild("Humanoid")
+
+humanoid.WalkSpeed = 50  --
