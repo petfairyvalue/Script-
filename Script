@@ -1,105 +1,86 @@
--- Services Roblox
+-- SERVICES
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- SCREEN GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "VisualPetSpawner"
-screenGui.ResetOnSpawn = false
-screenGui.IgnoreGuiInset = true
-screenGui.Parent = playerGui
-
--- MAIN FRAME (draggable)
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 300, 0, 400)
-mainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
-mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-mainFrame.BorderSizePixel = 0
-mainFrame.Active = true
-mainFrame.Draggable = true
-mainFrame.Parent = screenGui
-
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 12)
-corner.Parent = mainFrame
-
--- TITLE
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.Position = UDim2.new(0, 0, 0, 0)
-title.BackgroundTransparency = 1
-title.Font = Enum.Font.GothamBold
-title.TextSize = 20
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.Text = "Visual Pet Spawner"
-title.Parent = mainFrame
-
--- PET BUTTONS FRAME
-local buttonFrame = Instance.new("Frame")
-buttonFrame.Size = UDim2.new(1, -20, 1, -60)
-buttonFrame.Position = UDim2.new(0, 10, 0, 50)
-buttonFrame.BackgroundTransparency = 1
-buttonFrame.Parent = mainFrame
-
--- List of pets
+-- PET CONFIGURATION
 local pets = {
-    {Name = "Parrot", Color = Color3.fromRGB(255, 100, 0)},
-    {Name = "Owl", Color = Color3.fromRGB(200, 200, 255)},
-    {Name = "Dragon", Color = Color3.fromRGB(255, 0, 0)},
-    {Name = "Frost Dragon", Color = Color3.fromRGB(180, 220, 255)},
-    {Name = "Shadow Dragon", Color = Color3.fromRGB(50, 50, 50)}
+    {Name = "Parrot", Color = Color3.fromRGB(255, 0, 0), Size = Vector3.new(2,2,2)},
+    {Name = "Owl", Color = Color3.fromRGB(255,255,255), Size = Vector3.new(2,2,2)},
+    {Name = "Dragon", Color = Color3.fromRGB(0,0,255), Size = Vector3.new(3,3,3)}, -- exo
 }
 
--- Spawn function (visuel seulement)
-local function spawnPet(petName, isMega, isNeon)
-    local pet = Instance.new("Part")
-    pet.Size = Vector3.new(4, 4, 4)
-    pet.Position = player.Character and player.Character.PrimaryPart.Position + Vector3.new(5, 0, 0) or Vector3.new(0,5,0)
-    pet.Anchored = false
-    pet.CanCollide = false
-    pet.Shape = Enum.PartType.Ball
-    pet.BrickColor = BrickColor.Random()
-    pet.Name = petName
+-- CREATE GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "VisualPetSpawner"
+screenGui.Parent = playerGui
 
-    -- Color logic
-    if isNeon then
-        pet.Material = Enum.Material.Neon
-    else
-        pet.Material = Enum.Material.SmoothPlastic
-    end
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0.8,0,0.5,0)
+mainFrame.Position = UDim2.new(0.1,0,0.25,0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+mainFrame.Active = true
+mainFrame.Draggable = true -- DRAGGABLE FOR MOBILE
+mainFrame.Parent = screenGui
 
-    -- Size logic
-    if isMega then
-        pet.Size = pet.Size * 2
-    end
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 16)
+uiCorner.Parent = mainFrame
 
-    -- Attach to player for visual interaction
-    local weld = Instance.new("WeldConstraint")
-    weld.Part0 = player.Character and player.Character.PrimaryPart
-    weld.Part1 = pet
-    weld.Parent = pet
+-- BUTTONS TO SPAWN PETS
+local function createPetButton(pet, index)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0,150,0,50)
+    button.Position = UDim2.new(0,20,0, 60 * index)
+    button.Text = pet.Name
+    button.BackgroundColor3 = pet.Color
+    button.Parent = mainFrame
 
-    pet.Parent = workspace
+    button.MouseButton1Click:Connect(function()
+        -- Remove old pet if exists
+        if player.Character:FindFirstChild("VisualPet") then
+            player.Character.VisualPet:Destroy()
+        end
+
+        -- CREATE PET
+        local petModel = Instance.new("Part")
+        petModel.Size = pet.Size
+        petModel.Color = pet.Color
+        petModel.Name = "VisualPet"
+        petModel.Anchored = false
+        petModel.CanCollide = false
+        petModel.Parent = workspace
+
+        -- FOLLOW PLAYER
+        local bodyPos = Instance.new("BodyPosition")
+        bodyPos.MaxForce = Vector3.new(1e5,1e5,1e5)
+        bodyPos.Position = player.Character.HumanoidRootPart.Position + Vector3.new(3,2,0)
+        bodyPos.Parent = petModel
+
+        RunService.RenderStepped:Connect(function()
+            if petModel and bodyPos then
+                bodyPos.Position = player.Character.HumanoidRootPart.Position + Vector3.new(3,2,0)
+            end
+        end)
+
+        -- MOUNT PET (OPTIONAL)
+        local mountButton = Instance.new("TextButton")
+        mountButton.Size = UDim2.new(0,100,0,40)
+        mountButton.Position = UDim2.new(1,-120,0,60*index)
+        mountButton.Text = "Mount"
+        mountButton.Parent = mainFrame
+
+        mountButton.MouseButton1Click:Connect(function()
+            if player.Character and petModel then
+                player.Character.HumanoidRootPart.CFrame = petModel.CFrame + Vector3.new(0,2,0)
+            end
+        end)
+    end)
 end
 
--- Create buttons
-for i, petInfo in ipairs(pets) do
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(1, -20, 0, 40)
-    button.Position = UDim2.new(0, 0, 0, (i-1) * 45)
-    button.BackgroundColor3 = petInfo.Color
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.Font = Enum.Font.GothamBold
-    button.TextSize = 16
-    button.Text = petInfo.Name
-    button.Parent = buttonFrame
-
-    -- Click event
-    button.MouseButton1Click:Connect(function()
-        -- Exemple: spawn Mega Neon par défaut (tu peux ajouter un toggle GUI plus tard)
-        spawnPet(petInfo.Name, true, true)
-    end)
+for i,pet in ipairs(pets) do
+    createPetButton(pet, i)
 end
