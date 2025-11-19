@@ -1,47 +1,11 @@
--- Visual Adopt Me High-Tier Mega Pets (Delta Friendly)
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
-
--- Create main GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "MegaPetSpawner"
-screenGui.ResetOnSpawn = false
-screenGui.IgnoreGuiInset = true
-screenGui.Parent = playerGui
-
--- Draggable main frame
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 250, 0, 300)
-mainFrame.Position = UDim2.new(0.5, -125, 0.5, -150)
-mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-mainFrame.Active = true
-mainFrame.Draggable = true
-mainFrame.Parent = screenGui
-
-local uicorner = Instance.new("UICorner")
-uicorner.CornerRadius = UDim.new(0, 12)
-uicorner.Parent = mainFrame
-
-local title = Instance.new("TextLabel")
-title.Text = "Mega Pet Spawner"
-title.Size = UDim2.new(1, 0, 0, 40)
-title.BackgroundTransparency = 1
-title.TextColor3 = Color3.fromRGB(200, 200, 255)
-title.Font = Enum.Font.GothamBold
-title.TextScaled = true
-title.Parent = mainFrame
-
--- High-tier pets list
-local pets = {"Parrot", "Owl", "Dragon", "Frost Dragon", "Bat"}
-
--- Function to spawn visual pet
+-- Function to spawn visual pet (improved)
 local function spawnPet(petName)
     -- Remove old pet if exists
-    if player.Character:FindFirstChild("VisualPet") then
-        player.Character.VisualPet:Destroy()
+    if workspace:FindFirstChild("VisualPet") then
+        workspace.VisualPet:Destroy()
     end
 
+    -- Create pet model (simple MeshPart placeholder)
     local pet = Instance.new("Part")
     pet.Name = "VisualPet"
     pet.Size = Vector3.new(3,3,3)
@@ -49,71 +13,33 @@ local function spawnPet(petName)
     pet.Anchored = false
     pet.CanCollide = false
     pet.Material = Enum.Material.Neon
-    pet.BrickColor = BrickColor.Random() -- random glow color
+    pet.BrickColor = BrickColor.Random()
     pet.Parent = workspace
 
-    -- Weld to player for follow effect
-    local weld = Instance.new("WeldConstraint")
-    weld.Part0 = player.Character:FindFirstChild("HumanoidRootPart")
-    weld.Part1 = pet
-    weld.Parent = pet
+    -- Smooth follow using BodyPosition & BodyGyro
+    local bodyPos = Instance.new("BodyPosition")
+    bodyPos.MaxForce = Vector3.new(1e5,1e5,1e5)
+    bodyPos.P = 3000
+    bodyPos.D = 10
+    bodyPos.Position = player.Character.HumanoidRootPart.Position + Vector3.new(3,0,0)
+    bodyPos.Parent = pet
 
-    -- Optional: Visual label above pet
+    local bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.MaxTorque = Vector3.new(1e5,1e5,1e5)
+    bodyGyro.P = 3000
+    bodyGyro.CFrame = CFrame.new()
+    bodyGyro.Parent = pet
+
+    -- Update loop
+    local runService = game:GetService("RunService")
+    local conn
+    conn = runService.RenderStepped:Connect(function()
+        if not pet or not pet.Parent then conn:Disconnect() return end
+        local targetPos = player.Character.HumanoidRootPart.Position + Vector3.new(3,0,0)
+        bodyPos.Position = targetPos
+        bodyGyro.CFrame = CFrame.new(pet.Position, player.Character.HumanoidRootPart.Position)
+    end)
+
+    -- Billboard for pet name
     local billboard = Instance.new("BillboardGui")
-    billboard.Size = UDim2.new(0, 100, 0, 50)
-    billboard.Adornee = pet
-    billboard.AlwaysOnTop = true
-    billboard.Parent = pet
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1,0,1,0)
-    label.BackgroundTransparency = 1
-    label.Text = petName.." [Mega]"
-    label.TextColor3 = Color3.fromRGB(255,255,100)
-    label.Font = Enum.Font.GothamBold
-    label.TextScaled = true
-    label.Parent = billboard
-end
-
--- Create buttons for each pet
-for i, petName in ipairs(pets) do
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -20, 0, 40)
-    btn.Position = UDim2.new(0, 10, 0, 40 + (i-1)*50)
-    btn.Text = petName
-    btn.Font = Enum.Font.Gotham
-    btn.TextScaled = true
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-    btn.TextColor3 = Color3.fromRGB(255,255,255)
-    btn.Parent = mainFrame
-
-    btn.MouseButton1Click:Connect(function()
-        spawnPet(petName)
-    end)
-end
-
--- Extra buttons: Mount / Pet / Remove
-local extraButtons = {"Mount", "Pet", "Remove"}
-for i, name in ipairs(extraButtons) do
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -20, 0, 30)
-    btn.Position = UDim2.new(0, 10, 0, 300 - (4-i)*35)
-    btn.Text = name
-    btn.Font = Enum.Font.Gotham
-    btn.TextScaled = true
-    btn.BackgroundColor3 = Color3.fromRGB(70, 50, 50)
-    btn.TextColor3 = Color3.fromRGB(255,255,255)
-    btn.Parent = mainFrame
-
-    btn.MouseButton1Click:Connect(function()
-        local pet = workspace:FindFirstChild("VisualPet")
-        if pet then
-            if name == "Remove" then
-                pet:Destroy()
-            else
-                -- Simulate mount / pet effect
-                pet.BrickColor = BrickColor.Random()
-            end
-        end
-    end)
-end
+    billboard.Size = UDim2
